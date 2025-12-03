@@ -1,65 +1,75 @@
-import Image from "next/image";
+import DynamicComponent from '@/components/DynamicComponent';
+
+// Mocked CMS structure
+const pageStructure = {
+  sections: [
+    { type: 'card', props: { title: 'Products Section' } },
+    { type: 'card', props: { title: 'Blog Section' } },
+    { type: 'card', props: { title: 'Component Showcase' } },
+  ]
+};
 
 export default function Home() {
+  const productIds = ['1', '2', '3'];
+  const blogSlugs = ['post-1', 'post-2', 'post-3'];
+  
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <main className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold text-center mb-8 text-black">
+          Next.js CSS Modules Test
+        </h1>
+        
+        <div className="grid md:grid-cols-2 gap-8 mb-8">
+          <DynamicComponent type="card" title="Products Section">
+            <p className="mb-4">
+              Explore our dynamically generated product pages with CSS modules.
+            </p>
+            <ul className="space-y-2 pl-5 mb-4">
+              <li>Product Alpha</li>
+              <li>Product Beta</li>
+              <li>Product Gamma</li>
+            </ul>
+            <div className="mt-6 space-y-2">
+              {productIds.map(id => (
+                <div key={id}>
+                  <a href={`/products/${id}`} className="text-blue-600 hover:text-blue-800 underline">View Product {id}</a>
+                </div>
+              ))}
+            </div>
+          </DynamicComponent>
+          
+          <DynamicComponent type="card" title="Blog Section">
+            <p className="mb-4">
+              Read our latest blog posts with dynamically rendered content.
+            </p>
+            <ol className="space-y-2 pl-5 mb-4">
+              <li>Understanding CSS Modules</li>
+              <li>Getting Started with Turbopack</li>
+              <li>Tailwind CSS Best Practices</li>
+            </ol>
+            <div className="mt-6 space-y-2">
+              {blogSlugs.map(slug => (
+                <div key={slug}>
+                  <a href={`/blog/${slug}`} className="text-blue-600 hover:text-blue-800 underline">Read {slug}</a>
+                </div>
+              ))}
+            </div>
+          </DynamicComponent>
+        </div>
+        
+        <DynamicComponent type="card" title="Component Showcase">
+          <p className="mb-4">
+            This page uses only the Card component via dynamic import based on mocked CMS structure.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <p className="mb-2">Other components (Button, Link, List) are mapped but NOT used in the structure.</p>
+          <p>Check the bundle to see if their CSS modules are still loaded.</p>
+          <div className="mt-4 p-4 bg-gray-100 rounded">
+            <p className="text-sm font-mono">CMS Structure: {JSON.stringify(pageStructure.sections.map(s => s.type))}</p>
+          </div>
+        </DynamicComponent>
       </main>
     </div>
   );
 }
+
