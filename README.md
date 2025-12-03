@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js CSS Modules Bug Reproduction
 
-## Getting Started
+This repository demonstrates a bug in Next.js where dynamically imported SSR components cause all CSS modules to be loaded on every page, regardless of which components are actually used.
 
-First, run the development server:
+## 🐛 Issue
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**Related GitHub Issue:** [#86777 - Dynamic import of SSR components is causing the CSS of all components being loaded](https://github.com/vercel/next.js/issues/86777)
+
+### The Problem
+
+When using `dynamic()` imports with server-side rendered components that use CSS Modules, Next.js loads the CSS for **all** dynamically importable components on every page, even if only one component is actually used on that page.
+
+This defeats the purpose of code splitting and significantly increases page load times in production.
+
+### Expected Behavior
+
+Only the CSS modules for components actually used on a page should be loaded.
+
+### Current Behavior
+
+- **Development Mode**: Some CSS is correctly split, but unnecessary CSS modules are still loaded
+- **Production Build**: All CSS modules for all dynamically importable components are bundled together and loaded on every page
+
+## 📁 Project Structure
+
+```
+components/
+├── Button.tsx + Button.module.css
+├── Card.tsx + Card.module.css
+├── Link.tsx + Link.module.css
+├── List.tsx + List.module.css
+└── DynamicComponent.tsx (dynamic import wrapper)
+
+app/
+├── products/[id]/page.tsx (uses only Button via dynamic import)
+└── blog/[slug]/page.tsx (uses only Link via static import)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔍 How to Reproduce
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+```
 
-## Learn More
+### Option 1: Development Mode
 
-To learn more about Next.js, take a look at the following resources:
+1. Start the dev server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. Open [http://localhost:3000/products/1](http://localhost:3000/products/1)
+   - **Issue**: CSS for Button, Card, Link, and List are all loaded
+   - **Expected**: Only Button CSS should be loaded
 
-## Deploy on Vercel
+3. Open [http://localhost:3000/blog/1](http://localhost:3000/blog/1)
+   - **Result**: Only Link CSS is loaded (correct behavior with static import)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Option 2: Production Build
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Build the application:
+
+   ```bash
+   npm run build
+   ```
+
+2. Start the production server:
+
+   ```bash
+   npm run start
+   ```
+
+3. Open both routes and inspect the CSS files loaded
+   - **Issue**: All CSS modules are bundled together in both pages
+
+## 🔬 Investigation Details
+
+### Components
+
+- **Button**: Used in `app/products/[id]/page.tsx` via `DynamicComponent`
+- **Card**: NOT used anywhere
+- **Link**: Used in `app/blog/[slug]/page.tsx` via static import
+- **List**: NOT used anywhere
+
+### Dynamic Import Implementation
+
+The `DynamicComponent.tsx` file uses Next.js's `dynamic()` function to load components:
+
+```tsx
+const componentMap: Record<string, () => Promise<any>> = {
+  card: () => import('@/components/Card'),
+  button: () => import('@/components/Button'),
+  link: () => import('@/components/Link'),
+  list: () => import('@/components/List'),
+};
+
+const Component = dynamic(componentMap[type], {
+  loading: () => <div>Loading {type}...</div>,
+});
+```
+
+### What We've Tried
+
+- ✗ Using switch statements instead of object mapping
+- ✗ Separating client and server registries
+- ✗ Direct imports with conditional rendering
+- ✗ Different dynamic import configurations
+
+**All approaches result in the same CSS bundling behavior.**
+
+## 🎯 Use Case
+
+This pattern is common in CMS-driven applications where:
+
+- Page structure is defined dynamically
+- Components are loaded based on CMS configuration
+- Each page should only load the CSS/JS for components it actually uses
+
+## 🛠️ Tech Stack
+
+- **Next.js**: 16.0.6 (App Router)
+- **React**: 19.2.0
+- **TypeScript**: 5.9.3
+- **Tailwind CSS**: 3.4.18
+- **CSS Modules**: Native Next.js support
+- **Bundler**: Turbopack
+
+## 📊 Environment
+
+- **OS**: Windows 11 Pro
+- **Node**: 22.14.0
+- **npm**: 10.9.2
+
+## 🔗 Related Discussions
+
+- [Reddit: Problem with app router no-one is talking about - Dynamic Loading](https://www.reddit.com/r/nextjs/comments/1omk5vp/problem_with_app_router_noone_is_talking_about/)
+
+## 📝 License
+
+MIT
